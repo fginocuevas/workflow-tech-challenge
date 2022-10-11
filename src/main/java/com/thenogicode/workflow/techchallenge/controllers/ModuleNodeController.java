@@ -27,7 +27,7 @@ public class ModuleNodeController {
         return service.retrieveModuleByKey(key);
     }
 
-    @PostMapping("/dependencies/{key}")
+    @GetMapping("/dependencies/{key}")
     public List<String> getModuleDependencies(@PathVariable final String key) throws WorkflowException {
         return service.getModuleDependencies(key);
     }
