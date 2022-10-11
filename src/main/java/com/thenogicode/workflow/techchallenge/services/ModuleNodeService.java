@@ -46,16 +46,35 @@ public class ModuleNodeService {
 
     public List<String> getModuleDependencies(@NonNull String key) throws WorkflowException {
         final var module = retrieveModuleByKey(key);
-        final var setTree= flatTree(module.getChildren());
-        return setTree.stream().collect(Collectors.toList());
+
+        try {
+            final var setTree= flatTree(module.getChildren());
+
+            if(ListUtils.isNullOrEmpty(setTree)){
+                throw WorkflowException.notFound("No dependencies found for key " + key, "NotFoundException");
+            }
+
+            return setTree.stream().collect(Collectors.toList());
+        } catch (RuntimeException re){
+            throw WorkflowException.internalServerError(re.getMessage(), re.getLocalizedMessage());
+        }
+
     }
 
     public static Set<String> flatTree(List<ModuleNodeDto> toFlat) {
+        if(ListUtils.isNullOrEmpty(toFlat)) return null;
+
         return flatTree(toFlat, LinkedHashSet::new);
     }
 
     public static Set<String> flatTree(List<ModuleNodeDto> toFlat, Supplier<LinkedHashSet<String>> setSupplier){
-        return toFlat.stream().flatMap(ModuleNodeDto::streamChildren).map(node -> node.getModuleKey())
+        return toFlat.stream().flatMap(child -> {
+                    try {
+                        return child.streamChildren();
+                    } catch (WorkflowException e) {
+                        throw new RuntimeException(e.getMessage());
+                    }
+                }).map(node -> node.getModuleKey())
                 .collect(Collectors.toCollection(setSupplier));
     }
 
